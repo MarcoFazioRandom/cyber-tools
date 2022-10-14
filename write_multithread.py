@@ -32,29 +32,32 @@ def file_writer(filepath, queue):
 
 def task(number, queue):
 	# task loop
-	for i in range(1000):
+	for i in range(10):
 		# generate random number between 0 and 1
 		value = random()
 		# put the result in the queue
 		queue.put(f'Thread {number} got {value}.\n')
 
 
-# create the shared queue
-queue = Queue()
-# defile the shared file path
-filepath = 'output.txt'
-# create and start the file writer thread
-writer_thread = Thread(target=file_writer, args=(filepath, queue), daemon=True)
-writer_thread.start()
-# configure worker threads
-threads = [Thread(target=task, args=(i, queue)) for i in range(1000)]
-# start threads
-for thread in threads:
-	thread.start()
-# wait for threads to finish
-for thread in threads:
-	thread.join()
-# signal the file writer thread that we are done
-queue.put(None)
-# wait for all tasks in the queue to be processed
-queue.join()
+def start_queue():
+	# create the shared queue
+	queue = Queue()
+	# defile the shared file path
+	filepath = 'output.txt'
+	# create and start the file writer thread
+	writer_thread = Thread(target=file_writer, args=(filepath, queue), daemon=True)
+	writer_thread.start()
+	# configure worker threads
+	threads = [Thread(target=task, args=(i, queue)) for i in range(10)]
+	# start threads
+	for thread in threads:
+		thread.start()
+	# wait for threads to finish
+	for thread in threads:
+		thread.join()
+	# signal the file writer thread that we are done
+	queue.put(None)
+	# wait for all tasks in the queue to be processed
+	queue.join()
+
+start_queue()
