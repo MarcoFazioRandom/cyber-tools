@@ -1,5 +1,4 @@
 import threading
-import scan_tools
 import time
 
 def task(x):
