@@ -1,2 +1,0 @@
-from socscan import *
-
