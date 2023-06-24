@@ -4,7 +4,7 @@ import json
 import base64
 import termcolor
 
-url = r"https://analytics-eu.cloud.com/user/eyJoaWdobGlnaHREZWZhdWx0IjoidHJ1ZSIsImhpdElkIjoiYjViY2IyYTctOTVhNS01N2M4LTljOGItMTk4NTYwMTQwNDhkIiwiaW5kaWNhdG9ySWQiOiIzMDMiLCJ1c2VySWQiOiJ3aWxsaWFtLmFzc2FnYmF2aUBtc2MuY29tIiwidXNlcl9pZCI6IndpbGxpYW0uYXNzYWdiYXZpQG1zYy5jb20iLCJzcmNfbmFtZSI6InNpZW0ifQ=="
+url = r"https://www.google.com/"
 
 base64StringRegex = r"[?\/=]([+a-zA-Z0-9]{10,}={0,2})\/?$"
 emailRegex = r"[\w-]+(?:\.\w+)?@\w+\.[a-z]{2,3}"
