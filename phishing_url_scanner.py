@@ -1,10 +1,12 @@
+import os 
+import sys
 import re
 import urllib.parse
 import json
 import base64
 import termcolor
 
-url = r"https://www.google.com/"
+url = r"https://www.google.com/user=dXNlckBnbWFpbC5jb20="
 
 base64StringRegex = r"[?\/=]([+a-zA-Z0-9]{10,}={0,2})\/?$"
 emailRegex = r"[\w-]+(?:\.\w+)?@\w+\.[a-z]{2,3}"
@@ -148,10 +150,21 @@ def find_encoded_substrings(input:str, min_length=10):
 	return result
 
 def main():
+	try:
+		os.system('color')
+	except:
+		pass
+	
+	if len(sys.argv) == 1:
+		global url
+	elif len(sys.argv) == 2:
+		url = sys.argv[1]
+	else:
+		print(termcolor.colored("Invalid arguments!", "red"))
+		return
+	
 	url_data = analyze(url)
-
 	print_colored_url(url_data)
-
 	print(json.dumps(url_data, default=str, indent=2))
 
 if __name__ == '__main__':
