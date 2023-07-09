@@ -11,7 +11,7 @@ import cybertools
 import ports_scanner
 
 '''
-This script can be called with a target argument "python list_scanner.py 8.8.8.8" or with the name of a file "python list_scanner.py -f input.txt"
+This script can be called with a single target argument: `python list_scanner.py 8.8.8.8` or with -f + the name of a file `python list_scanner.py -f input.txt`
 '''
 
 results_keys = ["target", "type", "subtype", "virustotal_type", "virustotal_score", "name", "abuseConfidenceScore", "isPublic", "isWhitelisted", "countryCode", "usageType", "isp", "domain", "hostnames", "totalReports", "lastReportedAt", "lastComment"]
