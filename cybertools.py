@@ -6,6 +6,22 @@ import shodan
 import json
 import re
 
+_SHODAN_API_KEY = "KEY"
+
+SHODAN_KEYS = ["org", "hostnames", "domains", "C", "country_name", "city", "os", "isp", "last_update"]
+
+WHOIS_KEYS = ["domain_name", "registrar", "whois_server", "referral_url", "creation_date", "updated_date", "expiration_date", "name_servers", "emails", "org", "country"]
+
+_ABUSEIPDB_API_KEY = "KEY"
+
+ABUSEIPDB_KEYS = ["isPublic", "abuseConfidenceScore", "isWhitelisted", "countryCode", "usageType", "isp", "domain", "hostnames", "totalReports", "lastReportedAt", "lastComment"]
+
+_VIRUSTOTAL_API_KEY = "KEY"
+
+regex_ip = r'\b((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]))\b'
+regex_url = r'^(?:https?:\/\/)?([\w-]*[a-z]+[\w-]*(?:\.[\w-]*[a-z]+[\w-]*)+)'
+regex_hash = r'\b([a-z-A-Z0-9]{32,128})\b'
+
 # dates can be one date or a list of date, this function returns the most recent date.
 def convert_dates(dates):
 	if not dates:
@@ -23,10 +39,6 @@ def ping(target):
 	# output = stream.read()
 	# return output
 
-_SHODAN_API_KEY = "KEY"
-
-SHODAN_KEYS = ["org", "hostnames", "domains", "C", "country_name", "city", "os", "isp", "last_update"]
-
 def shodan_check(ip):
 	result = {k:None for k in SHODAN_KEYS}
 	api = shodan.Shodan(_SHODAN_API_KEY)
@@ -38,8 +50,6 @@ def shodan_check(ip):
 		result["error"] = e
 	return result
 
-WHOIS_KEYS = ["domain_name", "registrar", "whois_server", "referral_url", "creation_date", "updated_date", "expiration_date", "name_servers", "emails", "org", "country"]
-
 # Whois
 def whois_check(target):
 	result = {k:None for k in WHOIS_KEYS}
@@ -49,10 +59,6 @@ def whois_check(target):
 	except Exception as e:
 		result["error"] = e
 	return result
-
-_ABUSEIPDB_API_KEY = "KEY"
-
-ABUSEIPDB_KEYS = ["isPublic", "abuseConfidenceScore", "isWhitelisted", "countryCode", "usageType", "isp", "domain", "hostnames", "totalReports", "lastReportedAt", "lastComment"]
 
 def abuseipdb_check(ip, maxDays=180):
 	result = {k:None for k in ABUSEIPDB_KEYS}
@@ -84,8 +90,6 @@ def abuseipdb_check(ip, maxDays=180):
 		result["error"] = e
 
 	return result
-
-_VIRUSTOTAL_API_KEY = "KEY"
 
 def virustotal_check(collectionName, objectId):
 	'''collectionName can be: "files", "ip_addresses", "urls", "domains"'''
@@ -148,10 +152,6 @@ def phishtank_check(url:str):
 
 	return result
 
-regex_ip = r'\b((?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9]))\b'
-regex_url = r'^(?:https?:\/\/)?([\w-]*[a-z]+[\w-]*(?:\.[\w-]*[a-z]+[\w-]*)+)'
-regex_hash = r'\b([a-z-A-Z0-9]{32,128})\b'
-
 def get_type(target:str):
 	result = dict(value='', type='', subtype='', virustotal_type='')
 
@@ -192,3 +192,17 @@ def get_type(target:str):
 	
 	return None
 
+def deobfuscate(url:str):
+	final_url = url
+	final_url = re.sub(r'hxxp://', r'http://', final_url, flags=re.IGNORECASE)
+	final_url = re.sub(r'hxxps://', r'https://', final_url, flags=re.IGNORECASE)
+	final_url = final_url.replace('[', '')
+	final_url = final_url.replace(']', '')
+	return final_url
+
+def obfuscate(url:str):
+	final_url = deobfuscate(url)
+	final_url = final_url.replace(".", "[.]")
+	final_url = final_url.replace("@", "[@]")
+	final_url = final_url.replace(":", "[:]")
+	return final_url
