@@ -164,8 +164,21 @@ def main():
 		return
 	
 	url_data = analyze(url)
+
 	print_colored_url(url_data)
-	print(json.dumps(url_data, default=str, indent=2))
+	print()
+
+	# print(json.dumps(url_data, default=str, indent=2))
+
+	print(termcolor.colored("- obfuscated : \n" + url_data["obfuscated"], color='white'))
+	print(termcolor.colored("- deobfuscated : \n" + url_data["deobfuscated"], color='white'))
+	print(termcolor.colored("- domains : \n" + str(url_data["domains"]), color='cyan'))
+	print(termcolor.colored("- ips : \n" + str(url_data["ips"]), color='yellow'))
+	print(termcolor.colored("- base64_strings : \n" + str(url_data["base64_strings"]), color='green'))
+	print(termcolor.colored("- base64_strings_decoded : \n" + str(url_data["base64_strings_decoded"]), color='green'))
+	print(termcolor.colored("- emails : \n" + str(url_data["emails"]), color='red'))
+	print(termcolor.colored("- url_with_dummy_user : \n" + str(url_data["url_with_dummy_user"]), color='white'))
 
 if __name__ == '__main__':
 	main()
+
