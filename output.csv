@@ -1,4 +1,0 @@
-target,type,subtype,virustotal_type,virustotal_score,name,abuseConfidenceScore,isPublic,isWhitelisted,countryCode,usageType,isp,domain,hostnames,totalReports,lastReportedAt,lastComment
-e7f7b59b6a51703f05fd376b936bf5636741be8e8d0eadf454a73ce864a0e4a3,hash,sha256,files,33,Auslogics.BoostSpeed.13.0.0.3.exe,,,,,,,,,,,
-www.google.it,url,domain,domains,0,,,,,,,,,,,,
-146.88.240.4,ip,ipv4,ip_addresses,19,,100,True,False,US,Data Center/Web Hosting/Transit,Arbor Networks Inc.,arbor.net,['www.arbor-observatory.com'],17020,2023-06-24T06:25:22+00:00,Port scan - 18 hits (greater than 5)
