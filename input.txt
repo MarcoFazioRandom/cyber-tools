@@ -1,3 +1,5 @@
-e7f7b59b6a51703f05fd376b936bf5636741be8e8d0eadf454a73ce864a0e4a3
-146.88.240.4
-www.google.it
+8.8.8.8
+www.google.com
+http://www.google.com/robots.txt
+3cbcfddec145e3382d592266be193e5be53443138ee6ab6ca09ff20df609e268
+

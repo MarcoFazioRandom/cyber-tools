@@ -38,12 +38,12 @@ def test_ports(ip:str, ports:list=COMMON_PORTS, with_rotating_wheel=False):
 
 def rotating_wheel():
 	cursor = r"-\|/"
-	count = 0
+	ind = 0
 	while _loading:
-		to_print = cursor[count%len(cursor)]
+		to_print = cursor[ind]
 		print('\r', to_print, sep='', end='', flush=True)
 		time.sleep(0.2)
-		count += 1
+		ind = (ind+1)%len(cursor)
 
 def main():
 	ip = ''
