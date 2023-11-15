@@ -1,0 +1,2 @@
+target,type,subtype,whois_country,whois_creation_date,whois_domain_name,whois_expiration_date,whois_org,whois_registrar,whois_updated_date,virustotal_status,virustotal_malicious_score,virustotal_community_reputation,virustotal_tag,virustotal_last_analysis_date
+www.google.com,domain,,US,1997-09-15,GOOGLE.COM,2028-09-14,Google LLC,"MarkMonitor, Inc.",2019-09-09,200,1,197,,2023-11-15
