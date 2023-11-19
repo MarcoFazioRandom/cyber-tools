@@ -130,14 +130,17 @@ def main():
 	except:
 		pass
 
+	argv = []
+
 	if len(sys.argv) == 1:
-		print(termcolor.colored("No arguments.", "red"))
-		return
-	elif len(sys.argv) == 2:
-		target = sys.argv[1]
-		result = get_target_information(target, True, True, True, True)
+		argv = input("Input a ioc to scan or a file with '-f example.txt':\n").split()
+	else:
+		argv = sys.argv[1:]
+
+	if len(argv) == 1:
+		result = get_target_information(argv[0], True, True, True, True)
 		pprint(result)
-	elif len(sys.argv) == 3 and sys.argv[1] == '-f':
+	elif len(argv) == 2 and argv[0] == '-f':
 		print("Select service you want to use: \n1) WhoIs. \n2) AbuseIPDB analysis. \n3) VirusTotal analysis.\n4) Shodan. \n5) Everything.")
 		inp = input()
 		try:
@@ -167,7 +170,7 @@ def main():
 			print(termcolor.colored("Invalid input.", "red"))
 			return
 		
-		targets_list = get_targets_from_file(sys.argv[2])
+		targets_list = get_targets_from_file(argv[1])
 
 		print(f"targets to scan: {len(targets_list)}")
 
@@ -175,7 +178,7 @@ def main():
 
 		scan_with_multithread(targets_list, selected_whois, selected_abuseipdb, selected_virustotal, selected_shodan)
 	else:
-		print(termcolor.colored("Invalid cmd arguments.", "red"))
+		print(termcolor.colored("Invalid arguments.", "red"))
 
 if __name__ == '__main__':
 	main()
