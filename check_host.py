@@ -57,41 +57,44 @@ def print_nodes_status_http(message):
 	if tot == 0:
 		print(termcolor.colored("error: zero packets", "red"))
 		return
-	statuscodes_count = dict(Counter(statuscodes))
-	statuscodes_count["unresolved"] = unresolved_count
+	statuscodes_count_dict = dict(Counter(statuscodes))
+	if unresolved_count > 0:
+		statuscodes_count_dict["unresolved"] = unresolved_count
 	color = "white"
-	if statuscodes_count["200"] >= tot * 0.75:
+	if statuscodes_count_dict["200"] >= tot * 0.75:
 		color = "green"
-	elif statuscodes_count["200"] >= tot * 0.5:
+	elif statuscodes_count_dict["200"] >= tot * 0.5:
 		color = "yellow"
 	else:
 		color = "red"
-	result_string = f"{round(statuscodes_count['200']/tot, 2) * 100}% success, "
+	result_string = f"{round(statuscodes_count_dict['200']/tot, 2) * 100}% success, "
 	result_string += f"tot={tot}, "
-	result_string += str(statuscodes_count)
+	result_string += str(statuscodes_count_dict)
 	print(termcolor.colored(result_string, color))
 
 def print_nodes_status_ping(message):
 	unresolved_count = message.count('[[null]]')
 	checking_count = message.count('null') - unresolved_count
 	statuscodes = re.findall('(OK|TIMEOUT|MALFORMED)', message)
-	statuscodes_count = dict(Counter(statuscodes))
+	statuscodes_count_dict = dict(Counter(statuscodes))
 	tot = unresolved_count + checking_count + len(statuscodes)
-	statuscodes_count["unresolved"] = unresolved_count
-	statuscodes_count["still_checking"] = checking_count
+	if unresolved_count > 0:
+		statuscodes_count_dict["unresolved"] = unresolved_count
+	if checking_count > 0:
+		statuscodes_count_dict["still_checking"] = checking_count
 	if tot == 0:
 		print(termcolor.colored("error: zero packets", "red"))
 		return
 	color = "white"
-	if statuscodes_count["OK"] >= tot * 0.75:
+	if statuscodes_count_dict["OK"] >= tot * 0.75:
 		color = "green"
-	elif statuscodes_count["OK"] >= tot * 0.5:
+	elif statuscodes_count_dict["OK"] >= tot * 0.5:
 		color = "yellow"
 	else:
 		color = "red"
-	result_string = f"{round(statuscodes_count['OK']/tot, 2) * 100}% success, "
+	result_string = f"{round(statuscodes_count_dict['OK']/tot, 2) * 100}% success, "
 	result_string += f"tot={tot}, "
-	result_string += str(statuscodes_count)
+	result_string += str(statuscodes_count_dict)
 	print(termcolor.colored(result_string, color))
 
 def check_host(host:str, checktype:str='ping', max_nodes:int=42, nodes:str=''):
