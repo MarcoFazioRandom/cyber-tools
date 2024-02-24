@@ -7,11 +7,18 @@ import re
 import os
 import termcolor
 from collections import Counter
+import infinite_timer_loop
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # Import utility.py from parent directory
+import utility
 
-HOSTNAME = "https://www.google.com"
+HOSTNAMES = ['www.google.com',
+			'www.bing.com']
+
 CHECKTYPE = "http" # ping, http, tcp, dns, udp
 MAX_NODES = 42 # the maximum number of nodes used for the check (default=42)
 NODES = "" # a checking node(s)
+TIMER_LOOP = 300
+LOOPING = False
 
 # termcolor check.
 try:
@@ -57,17 +64,32 @@ def print_nodes_status_http(message):
 	if tot == 0:
 		print(termcolor.colored("error: zero packets", "red"))
 		return
+	
+	# Convert statuscodes to category (200 to 2XX etc.)
+	statuscodes_class = [code[:1]+"XX" for code in statuscodes]
+
 	statuscodes_count_dict = dict(Counter(statuscodes))
+	statuscodes_class_count_dict = dict(Counter(statuscodes_class))
+
 	if unresolved_count > 0:
 		statuscodes_count_dict["unresolved"] = unresolved_count
+		statuscodes_class_count_dict["unresolved"] = unresolved_count
+	
 	color = "white"
-	if statuscodes_count_dict["200"] >= tot * 0.75:
+
+	ok_count = statuscodes_class_count_dict.get("2XX", 0)
+	redirect_count = statuscodes_class_count_dict.get("3XX", 0)
+	error_count = statuscodes_class_count_dict.get("4XX", 0) + statuscodes_class_count_dict.get("5XX", 0)
+	unresolved_count = statuscodes_class_count_dict.get("unresolved", 0)
+
+	if ok_count >= tot*0.75:
 		color = "green"
-	elif statuscodes_count_dict["200"] >= tot * 0.5:
-		color = "yellow"
-	else:
+	elif error_count >= tot*0.5:
 		color = "red"
-	result_string = f"{round(statuscodes_count_dict['200']/tot, 2) * 100}% success, "
+	else:
+		color = "yellow"
+	
+	result_string = f"{round(ok_count/tot, 2) * 100}% success, "
 	result_string += f"tot={tot}, "
 	result_string += str(statuscodes_count_dict)
 	print(termcolor.colored(result_string, color))
@@ -86,9 +108,9 @@ def print_nodes_status_ping(message):
 		print(termcolor.colored("error: zero packets", "red"))
 		return
 	color = "white"
-	if statuscodes_count_dict["OK"] >= tot * 0.75:
+	if statuscodes_count_dict.get("OK", 0) >= tot * 0.75:
 		color = "green"
-	elif statuscodes_count_dict["OK"] >= tot * 0.5:
+	elif statuscodes_count_dict.get("OK", 0) >= tot * 0.5:
 		color = "yellow"
 	else:
 		color = "red"
@@ -97,6 +119,20 @@ def print_nodes_status_ping(message):
 	result_string += str(statuscodes_count_dict)
 	print(termcolor.colored(result_string, color))
 
+def get_redirected_url(host):
+	new_host = host
+
+	# Add http:// if absent.
+	if host[0:4] != "http":
+		new_host = "http://" + host
+
+	new_host = requests.request(method="get", url=new_host).url
+
+	if new_host != host:
+		print(f"(redirected to {new_host})")
+	
+	return new_host
+
 def check_host(host:str, checktype:str='ping', max_nodes:int=42, nodes:str=''):
 	'''
 	HOSTNAME = www.google.com.
@@ -104,6 +140,10 @@ def check_host(host:str, checktype:str='ping', max_nodes:int=42, nodes:str=''):
 	MAX_NODES = the maximum number of nodes used for the check.
 	NODES = a checking node(s).
 	'''
+
+	print(f"checking {host}")
+
+	host = get_redirected_url(host)
 
 	url = f"https://check-host.net/check-{checktype}?host={host}"
 	if max_nodes:
@@ -121,6 +161,7 @@ def check_host(host:str, checktype:str='ping', max_nodes:int=42, nodes:str=''):
 
 	if result["status"] != 200:
 		print(termcolor.colored(f"check-host.net error: statuscode {result['status']}", "red"))
+		print(url)
 		return result
 
 	try:
@@ -132,9 +173,18 @@ def check_host(host:str, checktype:str='ping', max_nodes:int=42, nodes:str=''):
 	# Wait for the ping to finish.
 	time.sleep(5)
 
+	if not result["permanent_link"]:
+		print(termcolor.colored("no results link", "red"))
+		return
+	
+	# print("permament link: ", result["permanent_link"])
+
 	report = curl(result["permanent_link"], headers)
 
-	nodes_results_list = get_nodes_results(report["text"])
+	nodes_results_list = get_nodes_results(report.get("text", ""))
+	if not nodes_results_list:
+		print(termcolor.colored("no results founds", "red"))
+		return
 	# pprint(nodes_results_list)
 
 	# print(f"{len(nodes_results_list)} nodes checked")
@@ -144,16 +194,38 @@ def check_host(host:str, checktype:str='ping', max_nodes:int=42, nodes:str=''):
 	elif checktype == "http":
 		print_nodes_status_http(str(nodes_results_list))
 
+def check_multiple_hosts(hosts:list, checktype:str='ping', max_nodes:int=42, nodes:str=''):
+	for host in hosts:
+		check_host(host, checktype, max_nodes, nodes)
+
+def check_host_infinite_loop(timer_interval:float, host, checktype:str='ping', max_nodes:int=42, nodes:str=''):
+	task = check_host
+	if isinstance(host, list):
+		task = check_multiple_hosts
+	infinite_timer_loop.infinite_timer_loop(timer_interval, task, task_args=(host, checktype, max_nodes, nodes,))
+
 def main():
-	target = ""
+	targets = HOSTNAMES
+	checktype = CHECKTYPE
+	max_nodes = MAX_NODES
+	timer_loop = TIMER_LOOP
 
-	if len(sys.argv) == 1:
-		target = input("Input a hostname or ip to check:\n")
-	
-	if not target:
-		target = HOSTNAME
+	print(f'targets:{targets} \nchecktype: {checktype} \nn of nodes: {max_nodes} \nloop: {LOOPING}')
+	if LOOPING:
+		print(f'run every {timer_loop} seconds.')
+	print()
 
-	check_host(target, CHECKTYPE, MAX_NODES, NODES)
+	if len(sys.argv) > 1:
+		parameters = utility.parse_cmd_parameters(sys.argv, ["hostname", "checktype", "nodes", "loop"])
+		targets = parameters.get("hostname", HOSTNAMES)
+		checktype = parameters.get("checktype", CHECKTYPE)
+		max_nodes = parameters.get("nodes", MAX_NODES)
+		timer_loop = parameters.get("loop", TIMER_LOOP)
+
+	if LOOPING or (len(sys.argv) > 1 and "-loop" in sys.argv):
+		check_host_infinite_loop(timer_loop, targets, checktype, max_nodes)
+	else:
+		check_multiple_hosts(targets, checktype, max_nodes)
 
 if __name__ == '__main__':
 	main()
