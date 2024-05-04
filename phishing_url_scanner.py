@@ -1,17 +1,34 @@
 import sys
 import re
 import urllib.parse
-import json
 import base64
 import termcolor
-import myregex
-import cybertools
 
 url = ''
-# url = r"www.google"
+
+# Test
+# url = r"http://www.test.com/redirect%20%20%20%20=www.mal.ru/user1=name@mail.com/?aGlkZGVuMTIzNA==/d2hhdD1oZWxsb0B3b3JsZC51cw==$"
+
+regex_domain_in_url = r"(?:^|\/|=)((?:[0-9A-Za-z](?:-?[0-9A-Za-z]){1,62})(?:\.[0-9A-Za-z](?:-?[0-9A-Za-z]){1,62})+)(?=\/|$)"
+regex_email = r'[\w\-\.]+@[a-zA-Z0-9\-]+(?:\.[a-zA-Z0-9\-]+)+'
+
+def deobfuscate(url:str):
+	final_url = url
+	final_url = re.sub(r'hxxp://', r'http://', final_url, flags=re.IGNORECASE)
+	final_url = re.sub(r'hxxps://', r'https://', final_url, flags=re.IGNORECASE)
+	final_url = final_url.replace('[', '')
+	final_url = final_url.replace(']', '')
+	return final_url
+
+def obfuscate(url:str):
+	final_url = url
+	final_url = final_url.replace(".", "[.]")
+	final_url = final_url.replace("@", "[@]")
+	final_url = final_url.replace(":", "[:]")
+	return final_url
 
 def replace_emails(dummy_email:str, url_data:dict):
-	new_url = url_data['original']
+	new_url = url_data['deobfuscated']
 
 	if len(url_data['emails']) == 0:
 		return new_url
@@ -28,23 +45,21 @@ def replace_emails(dummy_email:str, url_data:dict):
 	
 	return new_url
 
-def analyze(url:str):
-	keys = ['original', 'obfuscated', 'deobfuscated', 'encoded', 'decoded', 'domains', 'ips', 'base64_strings', 'base64_strings_decoded', 'emails', 'url_with_dummy_user']
-
-	result = {k:'' for k in keys}
+def analyze(url:str): 
+	result = {}
 
 	result['original'] = url
 
 	result['encoded'] = urllib.parse.quote(url, safe='')
 
-	result['decoded'] = urllib.parse.unquote(url)
+	result['deobfuscated'] = deobfuscate(url)
 
-	result['obfuscated'] = cybertools.obfuscate(url)
+	result['obfuscated'] = obfuscate(url)
 
-	result['deobfuscated'] = cybertools.deobfuscate(url)
+	result['decoded'] = urllib.parse.unquote(result['deobfuscated'])
 
 	result['base64_strings'] = list()
-	base64Strings = find_encoded_substrings(url)
+	base64Strings = find_encoded_substrings(result['deobfuscated'])
 	for s in base64Strings:
 		result['base64_strings'].append(s['encoded_string'])
 
@@ -53,24 +68,20 @@ def analyze(url:str):
 		result['base64_strings_decoded'].append(s['decoded_string'])
 
 	result['domains'] = list()
-	found_domain = re.findall(myregex.regex_domain_restrictive, result['deobfuscated'])
+	found_domain = re.findall(regex_domain_in_url, result['deobfuscated'])
 	result['domains'].extend(found_domain)
 
 	for s in result['base64_strings_decoded']:
-		found_domain = re.findall(myregex.regex_domain_restrictive, result['deobfuscated'])
+		found_domain = re.findall(regex_domain_in_url, s)
 		result['domains'].extend(found_domain)
 
-	result['ips'] = list()
-	result['ips'].extend(re.findall(myregex.regex_ip, result['deobfuscated']))
-	for s in result['base64_strings_decoded']:
-		result['ips'].extend(re.findall(myregex.regex_ip, s))
-
 	result['emails'] = list()
-	result['emails'].extend(re.findall(myregex.regex_email, result['deobfuscated']))
+	result['emails'].extend(re.findall(regex_email, result['deobfuscated']))
 	for s in result['base64_strings_decoded']:
-		result['emails'].extend(re.findall(myregex.regex_email, s))
+		result['emails'].extend(re.findall(regex_email, s))
 
-	result['url_with_dummy_user'] = replace_emails("user.example@google.com", result)
+	result['url_dummy_email'] = replace_emails("user.example@google.com", result)
+	result['url_dummy_email'] = obfuscate(result['url_dummy_email'] )
 	
 	return result
 
@@ -79,7 +90,7 @@ def print_colored_url(url_data:dict):
 	Print the url with the domains and the email found colored
 	'''
 
-	colored_url = url_data['original']
+	colored_url = url_data['deobfuscated']
 
 	for s in url_data['base64_strings']:
 		splitted = colored_url.split(s)
@@ -89,14 +100,11 @@ def print_colored_url(url_data:dict):
 		splitted = colored_url.split(s)
 		colored_url = termcolor.colored(s, color='cyan').join(splitted)
 	
-	for s in url_data['ips']:
-		splitted = colored_url.split(s)
-		colored_url = termcolor.colored(s, color='yellow').join(splitted)
-	
 	for s in url_data['emails']:
 		splitted = colored_url.split(s)
 		colored_url = termcolor.colored(s, color='red').join(splitted)
 	
+	# Color in red the strings containing emails.
 	for i in range(0, len(url_data['base64_strings_decoded'])):
 		s_decoded = url_data['base64_strings_decoded'][i]
 		if "@" in s_decoded:
@@ -104,7 +112,7 @@ def print_colored_url(url_data:dict):
 			splitted = colored_url.split(s_encoded)
 			colored_url = termcolor.colored(s_encoded, color='red').join(splitted)
 	
-	print(colored_url)
+	print(obfuscate(colored_url))
 	
 	return colored_url
 
@@ -157,20 +165,18 @@ def main():
 	
 	url_data = analyze(url)
 
+	print()
 	print_colored_url(url_data)
 	print()
 
 	# print(json.dumps(url_data, default=str, indent=2))
 
-	print(termcolor.colored(f"- decoded : \n{url_data['decoded']}", color='white'))
-	print(termcolor.colored(f"- obfuscated : \n{url_data['obfuscated']}", color='white'))
-	# print(termcolor.colored(f"- deobfuscated : \n{url_data['deobfuscated']}", color='white'))
+	print(termcolor.colored(f"- decoded : \n{obfuscate(url_data['decoded'])}", color='white'))
 	print(termcolor.colored(f"- domains : \n{str(url_data['domains'])}", color='cyan'))
-	print(termcolor.colored(f"- ips : \n{str(url_data['ips'])}", color='yellow'))
-	print(termcolor.colored(f"- base64_strings : \n{str(url_data['base64_strings'])}", color='green'))
-	print(termcolor.colored(f"- base64_strings_decoded : \n{str(url_data['base64_strings_decoded'])}", color='green'))
+	print(termcolor.colored(f"- base64 strings : \n{str(url_data['base64_strings'])}", color='green'))
+	print(termcolor.colored(f"- base64 strings decoded : \n{str(url_data['base64_strings_decoded'])}", color='green'))
 	print(termcolor.colored(f"- emails : \n{str(url_data['emails'])}", color='red'))
-	print(termcolor.colored(f"- url_with_dummy_user : \n{str(url_data['url_with_dummy_user'])}", color='white'))
+	print(termcolor.colored(f"- url with dummy email : \n{str(url_data['url_dummy_email'])}", color='white'))
 
 if __name__ == '__main__':
 	main()
